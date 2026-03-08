@@ -1,4 +1,4 @@
-import { Bell, CheckCheck, Package, ShoppingCart, X } from 'lucide-react';
+import { Bell, CheckCheck, Package, ShoppingCart, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -7,7 +7,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useNotifications, useUnreadCount, useMarkAsRead } from '@/hooks/useNotifications';
+import { useNotifications, useUnreadCount, useMarkAsRead, useDeleteNotification } from '@/hooks/useNotifications';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -18,6 +18,7 @@ export function NotificationBell() {
   const { data: notifications = [] } = useNotifications();
   const { data: unreadCount = 0 } = useUnreadCount();
   const markAsRead = useMarkAsRead();
+  const deleteNotification = useDeleteNotification();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { isAdmin } = useAuth();
@@ -92,9 +93,16 @@ export function NotificationBell() {
                       {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: es })}
                     </p>
                   </div>
-                  {!notif.is_read && (
-                    <div className="h-2 w-2 rounded-full bg-primary shrink-0 mt-2" />
-                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteNotification.mutate(notif.id);
+                    }}
+                    className="shrink-0 mt-1 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    aria-label="Eliminar notificación"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </button>
               ))}
             </div>

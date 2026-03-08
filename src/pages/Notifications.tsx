@@ -2,8 +2,8 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { PageTransition } from '@/components/PageTransition';
 import { SEOHead } from '@/components/SEOHead';
-import { useInfiniteNotifications, useUnreadCount, useMarkAsRead } from '@/hooks/useNotifications';
-import { Bell, CheckCheck, Package, ShoppingCart, Loader2 } from 'lucide-react';
+import { useInfiniteNotifications, useUnreadCount, useMarkAsRead, useDeleteNotification, useDeleteAllNotifications } from '@/hooks/useNotifications';
+import { Bell, CheckCheck, Package, ShoppingCart, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate, Navigate } from 'react-router-dom';
@@ -16,6 +16,8 @@ export default function Notifications() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteNotifications();
   const { data: unreadCount = 0 } = useUnreadCount();
   const markAsRead = useMarkAsRead();
+  const deleteNotification = useDeleteNotification();
+  const deleteAll = useDeleteAllNotifications();
   const navigate = useNavigate();
   const { user, loading: authLoading, isAdmin } = useAuth();
 
@@ -43,12 +45,20 @@ export default function Notifications() {
       <main className="container mx-auto px-4 py-6 min-h-screen pb-24">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Notificaciones</h1>
-          {unreadCount > 0 && (
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => markAsRead.mutate(undefined)}>
-              <CheckCheck className="h-4 w-4" />
-              Marcar todas como leídas
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {notifications.length > 0 && (
+              <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={() => deleteAll.mutate()} disabled={deleteAll.isPending}>
+                <Trash2 className="h-4 w-4" />
+                Eliminar todas
+              </Button>
+            )}
+            {unreadCount > 0 && (
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => markAsRead.mutate(undefined)}>
+                <CheckCheck className="h-4 w-4" />
+                Marcar todas como leídas
+              </Button>
+            )}
+          </div>
         </div>
 
         {isLoading ? (
@@ -64,10 +74,12 @@ export default function Notifications() {
         ) : (
           <div className="space-y-2">
             {notifications.map((notif) => (
-              <button
+              <div
                 key={notif.id}
                 onClick={() => handleClick(notif)}
-                className={`w-full text-left p-4 rounded-lg border transition-colors flex gap-3 ${
+                role="button"
+                tabIndex={0}
+                className={`w-full text-left p-4 rounded-lg border transition-colors flex gap-3 cursor-pointer ${
                   !notif.is_read ? 'bg-primary/5 border-primary/20' : 'bg-card border-border hover:bg-muted/50'
                 }`}
               >
@@ -92,7 +104,17 @@ export default function Notifications() {
                     {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: es })}
                   </p>
                 </div>
-              </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteNotification.mutate(notif.id);
+                  }}
+                  className="shrink-0 mt-1 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  aria-label="Eliminar notificación"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             ))}
 
             {hasNextPage && (

@@ -158,3 +158,38 @@ export function useMarkAsRead() {
     },
   });
 }
+
+export function useDeleteNotification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('notifications').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-infinite'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+      toast.success('Notificación eliminada');
+    },
+  });
+}
+
+export function useDeleteAllNotifications() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('notifications').delete().eq('user_id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-infinite'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+      toast.success('Todas las notificaciones eliminadas');
+    },
+  });
+}
