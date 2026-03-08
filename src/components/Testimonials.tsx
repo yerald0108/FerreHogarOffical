@@ -3,6 +3,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from '@/components/ui/carousel';
+import Autoplay from 'embla-carousel-autoplay';
+import { useRef } from 'react';
 
 interface Testimonial {
   id: string;
@@ -13,6 +22,10 @@ interface Testimonial {
 }
 
 export function Testimonials() {
+  const autoplayPlugin = useRef(
+    Autoplay({ delay: 4000, stopOnInteraction: true, stopOnMouseEnter: true })
+  );
+
   const { data: testimonials, isLoading } = useQuery({
     queryKey: ['testimonials'],
     queryFn: async () => {
@@ -63,29 +76,46 @@ export function Testimonials() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {testimonials.map((t) => (
-            <Card key={t.id} className="relative overflow-hidden">
-              <CardContent className="p-6">
-                <Quote className="h-8 w-8 text-primary/20 absolute top-4 right-4" />
-                <div className="flex gap-0.5 mb-3">
-                  {Array.from({ length: 5 }).map((_, s) => (
-                    <Star
-                      key={s}
-                      className={`h-4 w-4 ${s < t.rating ? 'fill-amber-400 text-amber-400' : 'text-muted'}`}
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                  "{t.text}"
-                </p>
-                <div>
-                  <p className="font-semibold text-foreground text-sm">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.location}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="max-w-5xl mx-auto px-10">
+          <Carousel
+            opts={{
+              align: 'start',
+              loop: true,
+            }}
+            plugins={[autoplayPlugin.current]}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-4">
+              {testimonials.map((t) => (
+                <CarouselItem key={t.id} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3">
+                  <div className="h-full transition-all duration-500 ease-out">
+                    <Card className="relative overflow-hidden h-full border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300">
+                      <CardContent className="p-6 flex flex-col h-full">
+                        <Quote className="h-8 w-8 text-primary/20 absolute top-4 right-4" />
+                        <div className="flex gap-0.5 mb-3">
+                          {Array.from({ length: 5 }).map((_, s) => (
+                            <Star
+                              key={s}
+                              className={`h-4 w-4 ${s < t.rating ? 'fill-amber-400 text-amber-400' : 'text-muted'}`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-4 leading-relaxed flex-1">
+                          &ldquo;{t.text}&rdquo;
+                        </p>
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">{t.name}</p>
+                          <p className="text-xs text-muted-foreground">{t.location}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="border-border hover:bg-primary hover:text-primary-foreground transition-colors" />
+            <CarouselNext className="border-border hover:bg-primary hover:text-primary-foreground transition-colors" />
+          </Carousel>
         </div>
       </div>
     </section>

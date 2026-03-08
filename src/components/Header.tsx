@@ -95,6 +95,8 @@ export function Header() {
     { href: '/contacto', label: 'Contacto' },
   ];
 
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
   const handleSignOut = async () => {
     await signOut();
     toast.success('Sesión cerrada correctamente');
@@ -137,16 +139,18 @@ export function Header() {
 
             {/* Actions */}
             <div className="flex items-center gap-1">
-              {/* Search button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSearchOpen(true)}
-                aria-label="Buscar"
-                className="h-9 w-9"
-              >
-                <Search className="h-5 w-5" />
-              </Button>
+              {/* Search button - hidden on admin panel */}
+              {!isAdminRoute && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSearchOpen(true)}
+                  aria-label="Buscar"
+                  className="h-9 w-9"
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
+              )}
 
               {!user && (
                 <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Cambiar tema" className="hidden md:inline-flex">
@@ -161,17 +165,19 @@ export function Header() {
                 </div>
               )}
               
-              {/* Cart - hidden on mobile (shown in bottom nav) */}
-              <Link to="/carrito" className="hidden md:inline-flex">
-                <Button variant="ghost" size="icon" className="relative" aria-label={`Carrito${totalItems > 0 ? ` (${totalItems} productos)` : ''}`}>
-                  <ShoppingCart className="h-5 w-5" />
-                  {totalItems > 0 && (
-                    <Badge className={`absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs ${animateBadge ? 'animate-bounce' : ''}`}>
-                      {totalItems}
-                    </Badge>
-                  )}
-                </Button>
-              </Link>
+              {/* Cart - hidden on admin panel and on mobile (shown in bottom nav) */}
+              {!isAdminRoute && (
+                <Link to="/carrito" className="hidden md:inline-flex">
+                  <Button variant="ghost" size="icon" className="relative" aria-label={`Carrito${totalItems > 0 ? ` (${totalItems} productos)` : ''}`}>
+                    <ShoppingCart className="h-5 w-5" />
+                    {totalItems > 0 && (
+                      <Badge className={`absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs ${animateBadge ? 'animate-bounce' : ''}`}>
+                        {totalItems}
+                      </Badge>
+                    )}
+                  </Button>
+                </Link>
+              )}
               
               {/* Desktop user menu */}
               {user ? (
