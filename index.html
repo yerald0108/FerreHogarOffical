@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FerreHogar — Tu ferretería en casa | Herramientas y materiales en Cuba</title>
+    <meta name="description" content="Encuentra herramientas, materiales de construcción y artículos para el hogar con entrega a domicilio en toda Cuba. Compra fácil y seguro en FerreHogar." />
+    <meta name="author" content="FerreHogar" />
+
+    <meta property="og:title" content="FerreHogar — Tu ferretería en casa" />
+    <meta property="og:description" content="Herramientas, materiales de construcción y artículos para el hogar con entrega a domicilio en toda Cuba." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@FerreHogar" />
+    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#ea580c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="FerreHogar" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
