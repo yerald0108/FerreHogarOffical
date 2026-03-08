@@ -3,11 +3,19 @@ import { useLocation } from 'react-router-dom';
 
 const WHATSAPP_NUMBER = '5352000000';
 
-export function WhatsAppFAB() {
-  const location = useLocation();
+const ALLOWED_PATHS = new Set([
+  '/',
+  '/terminos',
+  '/devoluciones',
+  '/privacidad',
+  '/nosotros',
+  '/contacto',
+]);
 
-  // Only show on homepage
-  if (location.pathname !== '/') {
+export function WhatsAppFAB() {
+  const { pathname } = useLocation();
+
+  if (!ALLOWED_PATHS.has(pathname)) {
     return null;
   }
 
