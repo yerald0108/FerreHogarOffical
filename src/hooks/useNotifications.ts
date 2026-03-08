@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useEffect } from 'react';
@@ -14,6 +14,8 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
 }
+
+const PAGE_SIZE = 20;
 
 export function useNotifications() {
   const { user } = useAuth();
@@ -31,7 +33,6 @@ export function useNotifications() {
         filter: `user_id=eq.${user.id}`,
       }, (payload: any) => {
         queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
-        // Show toast for new notification
         const newNotif = payload.new as any;
         if (newNotif?.title) {
           toast.info(newNotif.title, {
@@ -53,9 +54,51 @@ export function useNotifications() {
         .select('*')
         .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(PAGE_SIZE);
       if (error) throw error;
       return data as Notification[];
+    },
+    enabled: !!user,
+  });
+}
+
+export function useInfiniteNotifications() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('user-notifications-infinite')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['notifications-infinite', user.id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, queryClient]);
+
+  return useInfiniteQuery({
+    queryKey: ['notifications-infinite', user?.id],
+    queryFn: async ({ pageParam = 0 }) => {
+      const from = pageParam * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      if (error) throw error;
+      return data as Notification[];
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === PAGE_SIZE ? allPages.length : undefined;
     },
     enabled: !!user,
   });
@@ -110,6 +153,7 @@ export function useMarkAsRead() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-infinite'] });
       queryClient.invalidateQueries({ queryKey: ['unread-count'] });
     },
   });

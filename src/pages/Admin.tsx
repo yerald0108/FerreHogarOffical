@@ -1,9 +1,12 @@
+import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, Package, ShoppingBag, Users, BarChart3, Loader2, MessageSquare, Tag, Ticket, Inbox, Star, Image } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { LayoutDashboard, Package, ShoppingBag, Users, BarChart3, Loader2, MessageSquare, Tag, Ticket, Inbox, Star, Image, Menu } from 'lucide-react';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { AdminProducts } from '@/components/admin/AdminProducts';
 import { AdminOrders } from '@/components/admin/AdminOrders';
@@ -15,9 +18,44 @@ import { AdminCoupons } from '@/components/admin/AdminCoupons';
 import { AdminMessages } from '@/components/admin/AdminMessages';
 import { AdminTestimonials } from '@/components/admin/AdminTestimonials';
 import { AdminBanners } from '@/components/admin/AdminBanners';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
+
+const adminSections = [
+  { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { value: 'products', label: 'Productos', icon: Package },
+  { value: 'categories', label: 'Categorías', icon: Tag },
+  { value: 'orders', label: 'Pedidos', icon: ShoppingBag },
+  { value: 'coupons', label: 'Cupones', icon: Ticket },
+  { value: 'users', label: 'Usuarios', icon: Users },
+  { value: 'reviews', label: 'Reseñas', icon: MessageSquare },
+  { value: 'reports', label: 'Reportes', icon: BarChart3 },
+  { value: 'messages', label: 'Mensajes', icon: Inbox },
+  { value: 'testimonials', label: 'Testimonios', icon: Star },
+  { value: 'banners', label: 'Banners', icon: Image },
+] as const;
+
+type SectionValue = typeof adminSections[number]['value'];
+
+const sectionComponents: Record<SectionValue, React.FC> = {
+  dashboard: AdminDashboard,
+  products: AdminProducts,
+  categories: AdminCategories,
+  orders: AdminOrders,
+  coupons: AdminCoupons,
+  users: AdminUsers,
+  reviews: AdminReviews,
+  reports: AdminReports,
+  messages: AdminMessages,
+  testimonials: AdminTestimonials,
+  banners: AdminBanners,
+};
 
 const Admin = () => {
   const { user, loading, isAdmin } = useAuth();
+  const isMobile = useIsMobile();
+  const [activeSection, setActiveSection] = useState<SectionValue>('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (loading) {
     return (
@@ -31,10 +69,68 @@ const Admin = () => {
     return <Navigate to="/login" replace />;
   }
 
+  const activeLabel = adminSections.find(s => s.value === activeSection)?.label ?? 'Dashboard';
+  const ActiveComponent = sectionComponents[activeSection];
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 py-4">
+          <div className="container mx-auto px-3">
+            <div className="mb-4 flex items-center gap-3">
+              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon" aria-label="Abrir menú de secciones">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-72 p-0">
+                  <SheetTitle className="px-4 pt-5 pb-2 text-lg font-bold text-foreground">
+                    Administración
+                  </SheetTitle>
+                  <nav className="flex flex-col gap-1 px-2 pb-4">
+                    {adminSections.map((section) => {
+                      const Icon = section.icon;
+                      const isActive = activeSection === section.value;
+                      return (
+                        <button
+                          key={section.value}
+                          onClick={() => {
+                            setActiveSection(section.value);
+                            setSidebarOpen(false);
+                          }}
+                          className={cn(
+                            'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full text-left',
+                            isActive
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          {section.label}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </SheetContent>
+              </Sheet>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">{activeLabel}</h1>
+                <p className="text-muted-foreground text-xs">Panel de Administración</p>
+              </div>
+            </div>
+            <ActiveComponent />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
       <main className="flex-1 py-4 md:py-8">
         <div className="container mx-auto px-3 md:px-4">
           <div className="mb-4 md:mb-8">
@@ -43,104 +139,26 @@ const Admin = () => {
               Gestiona productos, pedidos, usuarios y reportes
             </p>
           </div>
-          
-          <Tabs defaultValue="dashboard" className="space-y-6">
-            <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0 scrollbar-thin">
-              <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto flex-wrap md:flex-nowrap gap-0.5 md:gap-0">
-                <TabsTrigger value="dashboard" className="gap-2">
-                  <LayoutDashboard className="h-4 w-4" />
-                  <span className="hidden sm:inline">Dashboard</span>
-                </TabsTrigger>
-                <TabsTrigger value="products" className="gap-2">
-                  <Package className="h-4 w-4" />
-                  <span className="hidden sm:inline">Productos</span>
-                </TabsTrigger>
-                <TabsTrigger value="categories" className="gap-2">
-                  <Tag className="h-4 w-4" />
-                  <span className="hidden sm:inline">Categorías</span>
-                </TabsTrigger>
-                <TabsTrigger value="orders" className="gap-2">
-                  <ShoppingBag className="h-4 w-4" />
-                  <span className="hidden sm:inline">Pedidos</span>
-                </TabsTrigger>
-                <TabsTrigger value="coupons" className="gap-2">
-                  <Ticket className="h-4 w-4" />
-                  <span className="hidden sm:inline">Cupones</span>
-                </TabsTrigger>
-                <TabsTrigger value="users" className="gap-2">
-                  <Users className="h-4 w-4" />
-                  <span className="hidden sm:inline">Usuarios</span>
-                </TabsTrigger>
-                <TabsTrigger value="reviews" className="gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  <span className="hidden sm:inline">Reseñas</span>
-                </TabsTrigger>
-                <TabsTrigger value="reports" className="gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Reportes</span>
-                </TabsTrigger>
-                <TabsTrigger value="messages" className="gap-2">
-                  <Inbox className="h-4 w-4" />
-                  <span className="hidden sm:inline">Mensajes</span>
-                </TabsTrigger>
-                <TabsTrigger value="testimonials" className="gap-2">
-                  <Star className="h-4 w-4" />
-                  <span className="hidden sm:inline">Testimonios</span>
-                </TabsTrigger>
-                <TabsTrigger value="banners" className="gap-2">
-                  <Image className="h-4 w-4" />
-                  <span className="hidden sm:inline">Banners</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            
-            <TabsContent value="dashboard">
-              <AdminDashboard />
-            </TabsContent>
-            
-            <TabsContent value="products">
-              <AdminProducts />
-            </TabsContent>
-            
-            <TabsContent value="categories">
-              <AdminCategories />
-            </TabsContent>
-            
-            <TabsContent value="orders">
-              <AdminOrders />
-            </TabsContent>
-
-            <TabsContent value="coupons">
-              <AdminCoupons />
-            </TabsContent>
-            
-            <TabsContent value="users">
-              <AdminUsers />
-            </TabsContent>
-            
-            <TabsContent value="reviews">
-              <AdminReviews />
-            </TabsContent>
-            
-            <TabsContent value="reports">
-              <AdminReports />
-            </TabsContent>
-
-            <TabsContent value="messages">
-              <AdminMessages />
-            </TabsContent>
-
-            <TabsContent value="testimonials">
-              <AdminTestimonials />
-            </TabsContent>
-
-            <TabsContent value="banners">
-              <AdminBanners />
-            </TabsContent>
+          <Tabs value={activeSection} onValueChange={(v) => setActiveSection(v as SectionValue)} className="space-y-6">
+            <TabsList className="inline-flex w-auto h-auto flex-wrap gap-0.5">
+              {adminSections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <TabsTrigger key={section.value} value={section.value} className="gap-2">
+                    <Icon className="h-4 w-4" />
+                    <span>{section.label}</span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+            {adminSections.map((section) => (
+              <TabsContent key={section.value} value={section.value}>
+                {React.createElement(sectionComponents[section.value])}
+              </TabsContent>
+            ))}
           </Tabs>
         </div>
       </main>
-      
       <Footer />
     </div>
   );

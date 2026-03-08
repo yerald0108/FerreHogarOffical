@@ -28,6 +28,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { Separator } from '@/components/ui/separator';
+import { useNewFavoritesBadge } from '@/hooks/useNewFavoritesBadge';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -41,7 +42,7 @@ export function Header() {
   const { data: profile } = useUserProfile();
   const { theme, toggleTheme } = useTheme();
   const avatarUrl = (profile as any)?.avatar_url;
-
+  const { newCount: newFavoritesCount } = useNewFavoritesBadge();
   // Active orders count
   const { data: activeOrdersCount = 0 } = useQuery({
     queryKey: ['active-orders-count', user?.id],
@@ -162,7 +163,7 @@ export function Header() {
               
               {/* Cart - hidden on mobile (shown in bottom nav) */}
               <Link to="/carrito" className="hidden md:inline-flex">
-                <Button variant="ghost" size="icon" className="relative">
+                <Button variant="ghost" size="icon" className="relative" aria-label={`Carrito${totalItems > 0 ? ` (${totalItems} productos)` : ''}`}>
                   <ShoppingCart className="h-5 w-5" />
                   {totalItems > 0 && (
                     <Badge className={`absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs ${animateBadge ? 'animate-bounce' : ''}`}>
@@ -176,7 +177,7 @@ export function Header() {
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="hidden md:inline-flex h-9 w-9">
+                    <Button variant="ghost" size="icon" className="hidden md:inline-flex h-9 w-9" aria-label="Menú de usuario">
                       {avatarUrl ? (
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={avatarUrl} alt="Perfil" />
@@ -204,6 +205,11 @@ export function Header() {
                       <Link to="/favoritos" className="flex items-center gap-2">
                         <Heart className="h-4 w-4" />
                         Mis Favoritos
+                        {newFavoritesCount > 0 && (
+                          <Badge className="ml-auto h-5 min-w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
+                            {newFavoritesCount}
+                          </Badge>
+                        )}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -259,6 +265,7 @@ export function Header() {
                 size="icon"
                 className="md:hidden h-9 w-9"
                 onClick={() => setMobileMenuOpen(true)}
+                aria-label="Abrir menú"
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -318,6 +325,11 @@ export function Header() {
                   <Link to="/favoritos" className="flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted">
                     <Heart className="h-4 w-4 text-muted-foreground" />
                     Mis Favoritos
+                    {newFavoritesCount > 0 && (
+                      <Badge className="ml-auto h-5 min-w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
+                        {newFavoritesCount}
+                      </Badge>
+                    )}
                   </Link>
                 </SheetClose>
                 <SheetClose asChild>

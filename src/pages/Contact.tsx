@@ -70,15 +70,43 @@ const Contact = () => {
       return;
     }
 
+    // Input validation
+    const name = formData.name.trim();
+    const email = formData.email.trim();
+    const subject = formData.subject.trim();
+    const message = formData.message.trim();
+    const phone = formData.phone.trim();
+
+    if (name.length < 2 || name.length > 100) {
+      toast.error('El nombre debe tener entre 2 y 100 caracteres.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 255) {
+      toast.error('Ingresa un correo electrónico válido.');
+      return;
+    }
+    if (subject.length < 3 || subject.length > 200) {
+      toast.error('El asunto debe tener entre 3 y 200 caracteres.');
+      return;
+    }
+    if (message.length < 10 || message.length > 2000) {
+      toast.error('El mensaje debe tener entre 10 y 2000 caracteres.');
+      return;
+    }
+    if (phone && (phone.length < 6 || phone.length > 20)) {
+      toast.error('Ingresa un teléfono válido.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const { error } = await supabase.from('contact_messages').insert({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone || null,
-        subject: formData.subject,
-        message: formData.message,
+        name,
+        email,
+        phone: phone || null,
+        subject,
+        message,
       });
 
       if (error) throw error;
@@ -184,6 +212,7 @@ const Contact = () => {
                             onChange={handleChange}
                             placeholder="Tu nombre"
                             required
+                            maxLength={100}
                           />
                         </div>
                         <div className="space-y-2">
@@ -196,6 +225,7 @@ const Contact = () => {
                             onChange={handleChange}
                             placeholder="tu@email.com"
                             required
+                            maxLength={255}
                           />
                         </div>
                       </div>
@@ -209,6 +239,7 @@ const Contact = () => {
                             value={formData.phone}
                             onChange={handleChange}
                             placeholder="+53 5XXX XXXX"
+                            maxLength={20}
                           />
                         </div>
                         <div className="space-y-2">
@@ -220,6 +251,7 @@ const Contact = () => {
                             onChange={handleChange}
                             placeholder="¿En qué podemos ayudarte?"
                             required
+                            maxLength={200}
                           />
                         </div>
                       </div>
@@ -234,6 +266,7 @@ const Contact = () => {
                           placeholder="Escribe tu mensaje aquí..."
                           rows={5}
                           required
+                          maxLength={2000}
                         />
                       </div>
 

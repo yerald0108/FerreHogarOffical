@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Package, Clock, User, MapPin, Phone, CreditCard, Bell, Download, Truck, StickyNote, Search } from 'lucide-react';
+import { Loader2, Package, Clock, User, MapPin, Phone, CreditCard, Bell, Download, Truck, StickyNote, Search, History, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAdminOrders, useUpdateOrderStatus, OrderWithProfile } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -13,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { OrderProgressTracker } from '@/components/OrderProgressTracker';
 
 const statusLabels: Record<string, string> = {
   pending: 'Pendiente',
@@ -40,6 +41,16 @@ export function AdminOrders() {
   const queryClient = useQueryClient();
   const [cancelModal, setCancelModal] = useState<{ orderId: string; currentStatus: string } | null>(null);
   const [cancellationReason, setCancellationReason] = useState('');
+  const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set());
+
+  const toggleHistory = (orderId: string) => {
+    setExpandedHistory(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  };
 
   // Realtime subscription for new orders (only show toast for INSERT events from other users)
   useEffect(() => {
@@ -260,6 +271,57 @@ export function AdminOrders() {
                   </div>
                 </div>
               </div>
+
+              {/* Order Progress Tracker */}
+              <div className="border rounded-lg p-4 bg-card">
+                <OrderProgressTracker 
+                  status={order.status} 
+                  statusHistory={(order.order_status_history || []).map(h => ({
+                    new_status: h.new_status,
+                    created_at: h.created_at,
+                  }))}
+                />
+              </div>
+
+              {/* Status Change History */}
+              {order.order_status_history && order.order_status_history.length > 0 && (
+                <div>
+                  <button
+                    onClick={() => toggleHistory(order.id)}
+                    className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <History className="h-4 w-4" />
+                    Historial de cambios ({order.order_status_history.length})
+                    {expandedHistory.has(order.id) ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                  </button>
+                  {expandedHistory.has(order.id) && (
+                    <div className="mt-2 space-y-1.5 pl-6 border-l-2 border-muted ml-2">
+                      {[...order.order_status_history]
+                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                        .map((entry) => (
+                        <div key={entry.id} className="flex items-center gap-3 text-sm py-1">
+                          <div className="flex items-center gap-2 flex-1">
+                            {entry.previous_status && (
+                              <>
+                                <Badge variant="outline" className="text-[10px] h-5">
+                                  {statusLabels[entry.previous_status] || entry.previous_status}
+                                </Badge>
+                                <span className="text-muted-foreground">→</span>
+                              </>
+                            )}
+                            <Badge variant={statusVariants[entry.new_status] || 'secondary'} className="text-[10px] h-5">
+                              {statusLabels[entry.new_status] || entry.new_status}
+                            </Badge>
+                          </div>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {format(new Date(entry.created_at), "d MMM yyyy, HH:mm", { locale: es })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               
               {/* Order Items */}
               <div className="space-y-2">

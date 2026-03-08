@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   CheckCircle2, 
   Package, 
@@ -25,8 +25,19 @@ import {
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { useAllProductPrices, formatCurrencyPrice } from '@/hooks/useProductPrices';
-import { useMemo } from 'react';
 import { SEOHead } from '@/components/SEOHead';
+import { OrderProgressTracker } from '@/components/OrderProgressTracker';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface OrderDetails {
   id: string;
@@ -52,9 +63,12 @@ const OrderConfirmation = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [statusHistory, setStatusHistory] = useState<{ new_status: string; created_at: string }[]>([]);
+  const [confirmingDelivery, setConfirmingDelivery] = useState(false);
 
   // Multi-currency prices for order items
   const itemProductIds = useMemo(() => 
@@ -114,6 +128,42 @@ const OrderConfirmation = () => {
       });
     }
   }, [order]);
+
+  // Fetch status history
+  const fetchStatusHistory = async () => {
+    if (!orderId) return;
+    const { data } = await supabase
+      .from('order_status_history')
+      .select('new_status, created_at')
+      .eq('order_id', orderId)
+      .order('created_at', { ascending: true });
+    if (data) setStatusHistory(data);
+  };
+
+  useEffect(() => {
+    if (order) fetchStatusHistory();
+  }, [order?.status]);
+
+  // Realtime subscription for order status changes
+  useEffect(() => {
+    if (!orderId) return;
+    const channel = supabase
+      .channel(`order-status-${orderId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `id=eq.${orderId}`,
+      }, (payload: any) => {
+        const newStatus = payload.new?.status;
+        if (newStatus && order) {
+          setOrder(prev => prev ? { ...prev, status: newStatus } : prev);
+          fetchStatusHistory();
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [orderId, order]);
 
   const fetchOrder = async () => {
     try {
@@ -278,6 +328,15 @@ const OrderConfirmation = () => {
             </p>
           </Card>
 
+          {/* Order Progress Tracker */}
+          <Card className="p-6 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              Estado del Pedido
+            </h2>
+            <OrderProgressTracker status={order.status} statusHistory={statusHistory} />
+          </Card>
+
           <div className="grid md:grid-cols-2 gap-6">
             {/* Order Details */}
             <Card className="p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
@@ -287,13 +346,6 @@ const OrderConfirmation = () => {
               </h2>
               
               <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Estado</p>
-                  <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-                    Pendiente de confirmación
-                  </Badge>
-                </div>
-                
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Fecha del pedido</p>
                   <p className="text-foreground capitalize">{formatDate(order.created_at)}</p>
@@ -399,6 +451,50 @@ const OrderConfirmation = () => {
               </Card>
             </div>
           </div>
+
+          {/* Delivery Confirmation Button */}
+          {order.status === 'shipped' && (
+            <div className="flex justify-center mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-500">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="lg" className="gap-2" disabled={confirmingDelivery}>
+                    {confirmingDelivery ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
+                    Confirmar que recibí mi pedido
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Confirmar recepción del pedido?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Al confirmar, indicas que recibiste el pedido #{order.id.slice(0, 8).toUpperCase()} satisfactoriamente.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={async () => {
+                      setConfirmingDelivery(true);
+                      try {
+                        const { error } = await supabase
+                          .from('orders')
+                          .update({ status: 'delivered' as any })
+                          .eq('id', order.id);
+                        if (error) throw error;
+                        setOrder(prev => prev ? { ...prev, status: 'delivered' } : prev);
+                        queryClient.invalidateQueries({ queryKey: ['user-orders'] });
+                        toast.success('¡Entrega confirmada! Gracias por tu compra.');
+                      } catch {
+                        toast.error('Error al confirmar la entrega');
+                      } finally {
+                        setConfirmingDelivery(false);
+                      }
+                    }}>
+                      Sí, lo recibí
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 mt-8 justify-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-500">

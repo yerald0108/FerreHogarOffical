@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { OrderTimeline } from '@/components/OrderTimeline';
+import { OrderProgressTracker } from '@/components/OrderProgressTracker';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -256,7 +256,13 @@ const MyOrders = () => {
                       </CardHeader>
                       
                       <CardContent className="pt-4">
-                        <OrderTimeline status={order.status} statusHistory={order.order_status_history} />
+                        <OrderProgressTracker 
+                          status={order.status} 
+                          statusHistory={(order.order_status_history || []).map(h => ({
+                            new_status: h.new_status,
+                            created_at: h.created_at,
+                          }))}
+                        />
                         <div className="grid gap-3 text-sm mt-4">
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Calendar className="h-4 w-4" />

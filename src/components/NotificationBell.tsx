@@ -1,4 +1,4 @@
-import { Bell, CheckCheck, Package, X } from 'lucide-react';
+import { Bell, CheckCheck, Package, ShoppingCart, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 export function NotificationBell() {
   const { data: notifications = [] } = useNotifications();
@@ -19,12 +20,17 @@ export function NotificationBell() {
   const markAsRead = useMarkAsRead();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const { isAdmin } = useAuth();
 
   const handleClick = (notif: any) => {
     if (!notif.is_read) markAsRead.mutate(notif.id);
-    if (notif.reference_id && notif.type === 'order_update') {
+    if (notif.reference_id) {
       setOpen(false);
-      navigate(`/pedido/${notif.reference_id}`);
+      if (notif.type === 'new_order' && isAdmin) {
+        navigate('/admin?tab=orders');
+      } else if (notif.type === 'order_update') {
+        navigate(`/pedido/${notif.reference_id}`);
+      }
     }
   };
 
@@ -35,7 +41,7 @@ export function NotificationBell() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label="Notificaciones">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge className="absolute -right-1 -top-1 h-5 min-w-5 rounded-full p-0 flex items-center justify-center text-[10px] animate-bounce">
@@ -73,7 +79,7 @@ export function NotificationBell() {
                   <div className={`mt-0.5 shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${
                     !notif.is_read ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
                   }`}>
-                    <Package className="h-4 w-4" />
+                    {notif.type === 'new_order' ? <ShoppingCart className="h-4 w-4" /> : <Package className="h-4 w-4" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className={`text-sm leading-tight ${!notif.is_read ? 'font-semibold' : 'font-medium'}`}>

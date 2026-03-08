@@ -2,21 +2,24 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { PageTransition } from '@/components/PageTransition';
 import { SEOHead } from '@/components/SEOHead';
-import { useNotifications, useUnreadCount, useMarkAsRead } from '@/hooks/useNotifications';
-import { Bell, CheckCheck, Package } from 'lucide-react';
+import { useInfiniteNotifications, useUnreadCount, useMarkAsRead } from '@/hooks/useNotifications';
+import { Bell, CheckCheck, Package, ShoppingCart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
+import { useMemo } from 'react';
 
 export default function Notifications() {
-  const { data: notifications = [] } = useNotifications();
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteNotifications();
   const { data: unreadCount = 0 } = useUnreadCount();
   const markAsRead = useMarkAsRead();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
+
+  const notifications = useMemo(() => data?.pages.flat() ?? [], [data]);
 
   if (!authLoading && !user) {
     return <Navigate to="/login" replace />;
@@ -24,8 +27,12 @@ export default function Notifications() {
 
   const handleClick = (notif: any) => {
     if (!notif.is_read) markAsRead.mutate(notif.id);
-    if (notif.reference_id && notif.type === 'order_update') {
-      navigate(`/pedido/${notif.reference_id}`);
+    if (notif.reference_id) {
+      if (notif.type === 'new_order' && isAdmin) {
+        navigate('/admin?tab=orders');
+      } else if (notif.type === 'order_update') {
+        navigate(`/pedido/${notif.reference_id}`);
+      }
     }
   };
 
@@ -44,7 +51,11 @@ export default function Notifications() {
           )}
         </div>
 
-        {notifications.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground">
             <Bell className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p className="text-lg font-medium">No tienes notificaciones</p>
@@ -63,7 +74,7 @@ export default function Notifications() {
                 <div className={`mt-0.5 shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${
                   !notif.is_read ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
                 }`}>
-                  <Package className="h-5 w-5" />
+                  {notif.type === 'new_order' ? <ShoppingCart className="h-5 w-5" /> : <Package className="h-5 w-5" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -83,6 +94,20 @@ export default function Notifications() {
                 </div>
               </button>
             ))}
+
+            {hasNextPage && (
+              <div className="text-center pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="gap-2"
+                >
+                  {isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Cargar más notificaciones
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </main>

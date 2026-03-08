@@ -76,7 +76,13 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput placeholder="Buscar productos, categorías..." />
       <CommandList>
-        <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+        <CommandEmpty>
+          <div className="py-6 text-center">
+            <Search className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+            <p className="text-sm font-medium text-foreground">No se encontraron resultados</p>
+            <p className="text-xs text-muted-foreground mt-1">Intenta con otro término o revisa nuestras categorías</p>
+          </div>
+        </CommandEmpty>
         
         {history.length > 0 && (
           <CommandGroup heading={

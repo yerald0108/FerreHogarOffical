@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/hooks/useAuth';
+import { useEffect } from 'react';
 
 export type Product = Tables<'products'> & {
   categories?: Tables<'categories'> | null;
@@ -10,8 +11,25 @@ export type Product = Tables<'products'> & {
 
 export type Category = Tables<'categories'>;
 
-// Fetch all products with categories
+// Fetch all products with categories + realtime invalidation
 export function useProducts() {
+  const queryClient = useQueryClient();
+
+  // Realtime: invalidate products when admin edits them
+  useEffect(() => {
+    const channel = supabase
+      .channel('products-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'products',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['products'],
     queryFn: async () => {

@@ -47,7 +47,7 @@ export function useAdminOrders() {
       // First get orders
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('*, order_items(*, products(*))')
+        .select('*, order_items(*, products(*)), order_status_history(*)')
         .order('created_at', { ascending: false });
       
       if (ordersError) throw ordersError;

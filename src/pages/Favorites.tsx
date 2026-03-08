@@ -9,8 +9,9 @@ import { Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useBulkProductRatings } from '@/hooks/useBulkRatings';
 import { useAllProductPrices } from '@/hooks/useProductPrices';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { SEOHead } from '@/components/SEOHead';
+import { useNewFavoritesBadge } from '@/hooks/useNewFavoritesBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +21,12 @@ export default function Favorites() {
   const { favorites, isLoading } = useFavorites();
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { markAsSeen } = useNewFavoritesBadge();
+
+  // Mark favorites as seen when visiting this page
+  useEffect(() => {
+    markAsSeen();
+  }, [markAsSeen]);
 
   // Get existing share link
   const { data: existingShare } = useQuery({
