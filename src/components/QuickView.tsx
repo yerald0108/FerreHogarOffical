@@ -57,7 +57,7 @@ export function QuickView({ product, rating, open, onOpenChange }: QuickViewProp
               <Badge variant="destructive" className="absolute top-2 right-2">Agotado</Badge>
             )}
             {product.compare_at_price && product.compare_at_price > product.price && (
-              <Badge className="absolute top-2 left-2 bg-red-600 hover:bg-red-600 text-white">
+              <Badge className="absolute top-2 left-2 bg-destructive hover:bg-destructive text-destructive-foreground">
                 -{Math.round((product.compare_at_price - product.price) / product.compare_at_price * 100)}%
               </Badge>
             )}

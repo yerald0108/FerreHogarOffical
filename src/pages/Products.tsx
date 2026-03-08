@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { Header } from '@/components/Header';
@@ -45,7 +45,7 @@ const Products = () => {
   }, [products]);
 
   // Initialize price range when products load
-  useMemo(() => {
+  useEffect(() => {
     if (maxPrice > 0 && priceRange[1] === 10000) {
       setPriceRange([0, maxPrice]);
     }

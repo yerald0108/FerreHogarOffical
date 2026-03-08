@@ -264,7 +264,7 @@ const ProductDetail = () => {
                     <span className="text-lg text-muted-foreground line-through">
                       {formatPrice(product.compare_at_price)}
                     </span>
-                    <Badge className="bg-red-600 hover:bg-red-600 text-white">
+                    <Badge className="bg-destructive hover:bg-destructive text-destructive-foreground">
                       -{Math.round((product.compare_at_price - product.price) / product.compare_at_price * 100)}%
                     </Badge>
                   </>

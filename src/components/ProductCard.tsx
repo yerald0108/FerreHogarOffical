@@ -43,6 +43,7 @@ export const ProductCard = memo(function ProductCard({ product, index = 0, bulkR
   const [imgError, setImgError] = useState(false);
   const [currentPriceIndex, setCurrentPriceIndex] = useState(0);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const [cartBounce, setCartBounce] = useState(false);
   const rateLimited = useRateLimit(800);
 
   useEffect(() => {
@@ -55,6 +56,8 @@ export const ProductCard = memo(function ProductCard({ product, index = 0, bulkR
 
   const handleAddToCart = rateLimited(() => {
     addItem(product);
+    setCartBounce(true);
+    setTimeout(() => setCartBounce(false), 600);
     toast.success(`${product.name} añadido al carrito`);
   });
 
@@ -106,7 +109,7 @@ export const ProductCard = memo(function ProductCard({ product, index = 0, bulkR
             </Badge>
           ) : null}
           {'compare_at_price' in product && (product as any).compare_at_price > product.price && (
-            <Badge className="absolute top-1.5 left-1.5 md:top-2 md:left-2 text-[10px] md:text-xs bg-red-600 hover:bg-red-600">
+            <Badge className="absolute top-1.5 left-1.5 md:top-2 md:left-2 text-[10px] md:text-xs bg-destructive hover:bg-destructive text-destructive-foreground">
               -{Math.round(((product as any).compare_at_price - product.price) / (product as any).compare_at_price * 100)}%
             </Badge>
           )}
@@ -163,7 +166,9 @@ export const ProductCard = memo(function ProductCard({ product, index = 0, bulkR
       <CardFooter className="p-2.5 pt-0 md:p-4 md:pt-0 mt-auto">
         <Button
           onClick={handleAddToCart}
-          className="w-full gap-1.5 md:gap-2 text-xs md:text-sm h-8 md:h-10"
+          className={`w-full gap-1.5 md:gap-2 text-xs md:text-sm h-8 md:h-10 transition-all duration-200 ${
+            cartBounce ? 'scale-95 ring-2 ring-primary/50 brightness-110' : 'active:scale-95'
+          }`}
           disabled={product.stock === 0}
           variant={product.stock === 0 ? "secondary" : "default"}
         >
@@ -171,9 +176,15 @@ export const ProductCard = memo(function ProductCard({ product, index = 0, bulkR
             <>Agotado</>
           ) : (
             <>
-              <ShoppingCart className="h-3.5 w-3.5 md:h-4 md:w-4" />
-              <span className="hidden sm:inline">Añadir al carrito</span>
-              <span className="sm:hidden">Añadir</span>
+              <ShoppingCart className={`h-3.5 w-3.5 md:h-4 md:w-4 transition-transform duration-300 ${cartBounce ? 'animate-[cart-bounce_0.6s_ease-out]' : ''}`} />
+              {cartBounce ? (
+                <span>¡Añadido! ✓</span>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">Añadir al carrito</span>
+                  <span className="sm:hidden">Añadir</span>
+                </>
+              )}
             </>
           )}
         </Button>
