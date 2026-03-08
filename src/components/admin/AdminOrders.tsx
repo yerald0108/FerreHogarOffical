@@ -41,16 +41,24 @@ export function AdminOrders() {
   const [cancelModal, setCancelModal] = useState<{ orderId: string; currentStatus: string } | null>(null);
   const [cancellationReason, setCancellationReason] = useState('');
 
-  // Realtime subscription for new orders
+  // Realtime subscription for new orders (only show toast for INSERT events from other users)
   useEffect(() => {
     const channel = supabase
       .channel('admin-orders-realtime')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
+        { event: 'INSERT', schema: 'public', table: 'orders' },
         () => {
           queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
-          toast.info('Lista de pedidos actualizada', { duration: 3000 });
+          toast.info('¡Nuevo pedido recibido!', { duration: 4000 });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
+        () => {
+          // Silently refresh data without duplicate toast (admin already sees success toast)
+          queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
         }
       )
       .subscribe();

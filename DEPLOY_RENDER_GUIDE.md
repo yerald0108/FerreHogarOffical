@@ -223,23 +223,27 @@ FerreHogar necesita estas variables de entorno para conectarse al backend:
 ### 6.2 Agregar variables en Render
 
 1. Ve a tu Static Site en el dashboard de Render
-2. Haz clic en **"Environment"** en el menú lateral
-3. Agrega cada variable:
-   - Clic en **"Add Environment Variable"**
+2. Haz clic en **"Environment"** en el menú lateral izquierdo
+3. En la sección **"Environment Variables"**, haz clic en **"Add Environment Variable"**
+4. Agrega la primera variable:
    - **Key:** `VITE_SUPABASE_URL`
-   - **Value:** tu URL de Supabase
-   - Repetir para `VITE_SUPABASE_PUBLISHABLE_KEY`
-4. Haz clic en **"Save Changes"**
+   - **Value:** `https://qteipiljcipcvovjfwtf.supabase.co`
+5. Haz clic en **"Add Environment Variable"** nuevamente para agregar la segunda:
+   - **Key:** `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - **Value:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0ZWlwaWxqY2lwY3Zvdmpmd3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNjUzNTksImV4cCI6MjA4NDc0MTM1OX0.C3ONaqQv_Ww25xE5x3U6zedQAX5KO8ss1WQCsNIG1jo`
+6. Haz clic en **"Save Changes"** en la parte superior
+
+> **💡 Tip:** También puedes usar el botón **"Add from .env"** y pegar el contenido de tu archivo `.env`, pero recuerda que Render solo reconocerá las variables que comiencen con `VITE_`.
 
 ### 6.3 Re-desplegar
 
 Después de agregar las variables, necesitas hacer un nuevo despliegue:
 
-1. Ve a la pestaña **"Deploys"** (o "Manual Deploy")
-2. Haz clic en **"Deploy latest commit"**
-3. Espera a que termine la construcción
+1. Ve a la pestaña **"Deploys"** en el menú lateral
+2. Haz clic en **"Deploy latest commit"** (botón morado)
+3. Espera a que termine la construcción (2-5 minutos)
 
-> **⚠️ IMPORTANTE:** Las variables con prefijo `VITE_` se inyectan en **tiempo de compilación** (build time), no en tiempo de ejecución. Por eso es necesario re-desplegar después de cambiarlas.
+> **⚠️ IMPORTANTE:** Las variables con prefijo `VITE_` se inyectan en **tiempo de compilación** (build time), no en tiempo de ejecución. Por eso es **obligatorio** re-desplegar después de cambiarlas.
 
 ---
 

@@ -153,11 +153,13 @@ const Checkout = () => {
   const handleNext = () => {
     if (validateStep(currentStep)) {
       setCurrentStep((prev: number) => Math.min(prev + 1, STEPS.length));
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
   };
 
   const handleBack = () => {
     setCurrentStep((prev: number) => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleSubmit = async () => {

@@ -5,12 +5,25 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnreadCount } from '@/hooks/useNotifications';
+import { useEffect, useRef, useState } from 'react';
 
 export function BottomNav() {
   const location = useLocation();
   const totalItems = useCartStore((state) => state.getTotalItems());
   const { user } = useAuth();
   const { data: unreadCount = 0 } = useUnreadCount();
+  const [visible, setVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      setVisible(currentY < 50 || currentY < lastScrollY.current);
+      lastScrollY.current = currentY;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Don't show on admin pages
   if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/gestionar')) {
@@ -26,7 +39,10 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-lg border-t safe-area-bottom">
+    <nav className={cn(
+      "fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-lg border-t safe-area-bottom transition-transform duration-300",
+      !visible && "translate-y-full"
+    )}>
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
           const isActive = item.href === '/' 
